@@ -5,7 +5,7 @@
  * Strictly adheres to language guidelines (no diet/weight loss goals, framing as corridor & balance).
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { MOCK_NUMBERS_FORM } from "../mockData";
 
 interface Screen2NumbersProps {
@@ -15,17 +15,68 @@ interface Screen2NumbersProps {
 
 export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }) => {
   const [budget, setBudget] = useState<number>(MOCK_NUMBERS_FORM.budget);
+  const [isEditingBudget, setIsEditingBudget] = useState<boolean>(false);
+  const [budgetString, setBudgetString] = useState<string>(MOCK_NUMBERS_FORM.budget.toString());
+
   const [gender, setGender] = useState<string>(MOCK_NUMBERS_FORM.gender);
+  const [age, setAge] = useState<number>(MOCK_NUMBERS_FORM.age);
+  const [weight, setWeight] = useState<number>(MOCK_NUMBERS_FORM.weight);
+  const [height, setHeight] = useState<number>(MOCK_NUMBERS_FORM.height);
   const [activity, setActivity] = useState<string>(MOCK_NUMBERS_FORM.activity);
   const [direction, setDirection] = useState<string>(MOCK_NUMBERS_FORM.direction);
-  const [isAdjusting, setIsAdjusting] = useState<boolean>(false);
+  
+  const [isCustomOverride, setIsCustomOverride] = useState<boolean>(false);
+  const [customProtein, setCustomProtein] = useState<number>(135);
+  const [customCalories, setCustomCalories] = useState<number>(2250);
+
+  // Dynamic calculation based on physical inputs
+  const calculatedMetrics = useMemo(() => {
+    // Standard Mifflin-St Jeor equation for basal metabolic rate
+    const bmr = gender === "Ч"
+      ? 10 * weight + 6.25 * height - 5 * age + 5
+      : 10 * weight + 6.25 * height - 5 * age - 161;
+
+    // Activity multiplier
+    const actFactor = activity === "Низька" ? 1.25 : activity === "Середня" ? 1.45 : 1.7;
+
+    // Direction adjustment
+    const dirOffset = direction === "Набір" ? 250 : direction === "Зниження" ? -250 : 0;
+
+    // Target Calories (rounded to nearest 50)
+    const calories = Math.round((bmr * actFactor + dirOffset) / 50) * 50;
+
+    // Protein calculation (g/kg basis based on goal & gender)
+    const proteinFactor = gender === "Ч"
+      ? (direction === "Набір" ? 1.85 : direction === "Зниження" ? 1.75 : 1.7)
+      : (direction === "Набір" ? 1.65 : direction === "Зниження" ? 1.55 : 1.45);
+    
+    const protein = Math.round(weight * proteinFactor);
+
+    return {
+      protein: Math.max(60, protein),
+      calories: Math.max(1400, calories)
+    };
+  }, [gender, weight, height, age, activity, direction]);
+
+  const activeProtein = isCustomOverride ? customProtein : calculatedMetrics.protein;
+  const activeCalories = isCustomOverride ? customCalories : calculatedMetrics.calories;
+
+  const handleBudgetSubmit = () => {
+    const parsed = parseInt(budgetString.replace(/\D/g, ""), 10);
+    if (!isNaN(parsed) && parsed >= 500 && parsed <= 15000) {
+      setBudget(parsed);
+    } else {
+      setBudgetString(budget.toString());
+    }
+    setIsEditingBudget(false);
+  };
 
   return (
     <div className="screen-wrapper">
       {/* Screen App Bar */}
       <div className="app-screen-header">
         <div className="app-screen-brand">
-          <button type="button" onClick={onPrev} style={{ display: "flex", alignItems: "center", color: "var(--color-text-muted)" }}>
+          <button type="button" onClick={onPrev} className="app-back-btn" aria-label="Назад">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="m15 18-6-6 6-6" />
             </svg>
@@ -46,23 +97,62 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }
         </div>
 
         <div className="form-grid">
-          {/* Budget slider */}
+          {/* Budget slider with interactive precision number editor */}
           <div className="form-card-field">
             <div className="field-label-row">
               <span className="field-label">Бюджет на тиждень</span>
-              <span className="field-value-bold" style={{ color: "var(--color-primary-dark)" }}>
-                {budget.toLocaleString("uk-UA")} ₴
-              </span>
+              
+              {isEditingBudget ? (
+                <div className="budget-inline-editor">
+                  <input
+                    type="number"
+                    value={budgetString}
+                    onChange={(e) => setBudgetString(e.target.value)}
+                    onBlur={handleBudgetSubmit}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleBudgetSubmit();
+                    }}
+                    autoFocus
+                    className="budget-number-input"
+                  />
+                  <button type="button" onClick={handleBudgetSubmit} className="budget-confirm-btn">
+                    OK
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBudgetString(budget.toString());
+                    setIsEditingBudget(true);
+                  }}
+                  className="budget-value-trigger"
+                  title="Натисніть, щоб ввести точну суму вручну"
+                >
+                  <span className="field-value-bold">{budget.toLocaleString("uk-UA")} ₴</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="budget-edit-pencil">
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  </svg>
+                </button>
+              )}
             </div>
+
             <div className="budget-slider-container">
               <input
                 type="range"
                 min={MOCK_NUMBERS_FORM.budgetMin}
                 max={MOCK_NUMBERS_FORM.budgetMax}
-                step={100}
+                step={50}
                 value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setBudget(val);
+                  setBudgetString(val.toString());
+                }}
                 className="custom-range-slider"
+                style={{
+                  background: `linear-gradient(to right, #F35B04 0%, #F35B04 ${((budget - MOCK_NUMBERS_FORM.budgetMin) / (MOCK_NUMBERS_FORM.budgetMax - MOCK_NUMBERS_FORM.budgetMin)) * 100}%, #E5E0D8 ${((budget - MOCK_NUMBERS_FORM.budgetMin) / (MOCK_NUMBERS_FORM.budgetMax - MOCK_NUMBERS_FORM.budgetMin)) * 100}%, #E5E0D8 100%)`
+                }}
               />
               <div className="slider-bounds">
                 <span>{MOCK_NUMBERS_FORM.budgetMin.toLocaleString("uk-UA")} ₴</span>
@@ -71,15 +161,16 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }
             </div>
           </div>
 
-          {/* Gender & Age */}
+          {/* Gender & Age (With tactile inputs) */}
           <div className="form-2col-row">
             <div className="form-card-field">
               <span className="field-label">Стать</span>
-              <div className="segmented-control">
+              <div className="segmented-control tactile-segmented">
                 <button
                   type="button"
                   className={`segmented-btn ${gender === "Ж" ? "is-active" : ""}`}
                   onClick={() => setGender("Ж")}
+                  aria-label="Жіноча стать"
                 >
                   Ж
                 </button>
@@ -87,34 +178,72 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }
                   type="button"
                   className={`segmented-btn ${gender === "Ч" ? "is-active" : ""}`}
                   onClick={() => setGender("Ч")}
+                  aria-label="Чоловіча стать"
                 >
                   Ч
                 </button>
               </div>
             </div>
 
-            <div className="input-stat-box">
-              <span className="stat-label-tiny">Вік</span>
-              <span className="stat-value-big">{MOCK_NUMBERS_FORM.age}</span>
+            {/* Age: Explicit interactive input field */}
+            <div className="tactile-input-card">
+              <label htmlFor="input-age" className="tactile-input-label">Вік</label>
+              <div className="tactile-input-wrapper">
+                <input
+                  id="input-age"
+                  type="number"
+                  min="16"
+                  max="99"
+                  value={age}
+                  onChange={(e) => setAge(Math.max(16, Math.min(99, Number(e.target.value) || 16)))}
+                  className="tactile-numeric-input"
+                />
+                <span className="tactile-input-unit">р.</span>
+              </div>
             </div>
           </div>
 
-          {/* Weight & Height */}
+          {/* Weight & Height (Explicit interactive input fields) */}
           <div className="form-2col-row">
-            <div className="input-stat-box">
-              <span className="stat-label-tiny">Вага</span>
-              <span className="stat-value-big">{MOCK_NUMBERS_FORM.weight} кг</span>
+            {/* Weight */}
+            <div className="tactile-input-card">
+              <label htmlFor="input-weight" className="tactile-input-label">Вага</label>
+              <div className="tactile-input-wrapper">
+                <input
+                  id="input-weight"
+                  type="number"
+                  min="40"
+                  max="180"
+                  value={weight}
+                  onChange={(e) => setWeight(Math.max(35, Math.min(220, Number(e.target.value) || 40)))}
+                  className="tactile-numeric-input"
+                />
+                <span className="tactile-input-unit">кг</span>
+              </div>
             </div>
-            <div className="input-stat-box">
-              <span className="stat-label-tiny">Зріст</span>
-              <span className="stat-value-big">{MOCK_NUMBERS_FORM.height} см</span>
+
+            {/* Height */}
+            <div className="tactile-input-card">
+              <label htmlFor="input-height" className="tactile-input-label">Зріст</label>
+              <div className="tactile-input-wrapper">
+                <input
+                  id="input-height"
+                  type="number"
+                  min="120"
+                  max="220"
+                  value={height}
+                  onChange={(e) => setHeight(Math.max(100, Math.min(230, Number(e.target.value) || 120)))}
+                  className="tactile-numeric-input"
+                />
+                <span className="tactile-input-unit">см</span>
+              </div>
             </div>
           </div>
 
-          {/* Activity */}
+          {/* Activity (Tactile Segmented) */}
           <div className="form-card-field">
             <span className="field-label">Активність</span>
-            <div className="segmented-control">
+            <div className="segmented-control tactile-segmented">
               {["Низька", "Середня", "Висока"].map((lvl) => (
                 <button
                   key={lvl}
@@ -128,10 +257,10 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }
             </div>
           </div>
 
-          {/* Direction */}
+          {/* Direction (Tactile Segmented) */}
           <div className="form-card-field">
             <span className="field-label">Напрям</span>
-            <div className="segmented-control">
+            <div className="segmented-control tactile-segmented">
               {["Набір", "Утримання", "Зниження"].map((dir) => (
                 <button
                   key={dir}
@@ -145,39 +274,79 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev }
             </div>
           </div>
 
-          {/* HERO COMPUTED RESULT CARD */}
-          <div className="hero-computed-card">
+          {/* HERO COMPUTED RESULT CARD (Frosted Glass with Live Targets) */}
+          <div className="hero-computed-card frosted-glass-dark">
             <div className="hero-computed-header">
-              <span className="hero-computed-title">Ваша ціль</span>
+              <div className="hero-computed-title-wrap">
+                <span className="hero-computed-dot" />
+                <span className="hero-computed-title">Ваша ціль</span>
+              </div>
               <button
                 type="button"
                 className="hero-computed-link"
-                onClick={() => setIsAdjusting(!isAdjusting)}
+                onClick={() => {
+                  if (!isCustomOverride) {
+                    setCustomProtein(calculatedMetrics.protein);
+                    setCustomCalories(calculatedMetrics.calories);
+                  }
+                  setIsCustomOverride(!isCustomOverride);
+                }}
               >
-                {isAdjusting ? "Зберегти" : "Скоригувати"}
+                {isCustomOverride ? "Скинути до авто" : "Скоригувати"}
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div className="hero-computed-row">
-                <span className="hero-metric-label">Білок</span>
-                <div className="hero-metric-value-wrap">
-                  <span className="hero-metric-value">{MOCK_NUMBERS_FORM.computedProtein} г / добу</span>
-                  <span className="hero-metric-note">(мінімум)</span>
+            {/* Direct Information Visibility: Prominently Displayed Targets */}
+            <div className="hero-metrics-grid">
+              <div className="hero-metric-tile">
+                <div className="hero-metric-tile-header">
+                  <span className="hero-metric-label">Білок</span>
+                  <span className="hero-metric-badge-mini">мінімум</span>
                 </div>
+                {isCustomOverride ? (
+                  <div className="hero-metric-inline-edit">
+                    <input
+                      type="number"
+                      value={customProtein}
+                      onChange={(e) => setCustomProtein(Number(e.target.value))}
+                      className="hero-metric-input"
+                    />
+                    <span className="hero-metric-unit">г/добу</span>
+                  </div>
+                ) : (
+                  <div className="hero-metric-value-display">
+                    <span className="hero-metric-num">{activeProtein}</span>
+                    <span className="hero-metric-unit">г / добу</span>
+                  </div>
+                )}
               </div>
 
-              <div className="hero-computed-row">
-                <span className="hero-metric-label">Калорії</span>
-                <div className="hero-metric-value-wrap">
-                  <span className="hero-metric-value">{MOCK_NUMBERS_FORM.computedCalories.toLocaleString("uk-UA")} ккал</span>
-                  <span className="hero-metric-note">(коридор {MOCK_NUMBERS_FORM.caloriesVariance})</span>
+              <div className="hero-metric-tile">
+                <div className="hero-metric-tile-header">
+                  <span className="hero-metric-label">Калорії</span>
+                  <span className="hero-metric-badge-mini">±15% коридор</span>
                 </div>
+                {isCustomOverride ? (
+                  <div className="hero-metric-inline-edit">
+                    <input
+                      type="number"
+                      value={customCalories}
+                      onChange={(e) => setCustomCalories(Number(e.target.value))}
+                      className="hero-metric-input"
+                    />
+                    <span className="hero-metric-unit">ккал</span>
+                  </div>
+                ) : (
+                  <div className="hero-metric-value-display">
+                    <span className="hero-metric-num">{activeCalories.toLocaleString("uk-UA")}</span>
+                    <span className="hero-metric-unit">ккал</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="hero-computed-footer-note">
-              Порахували з ваших даних. Можна змінити.
+              Автоматично розраховано з ваших {weight} кг, {height} см та активності.
             </div>
           </div>
         </div>

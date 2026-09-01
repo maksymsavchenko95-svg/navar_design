@@ -110,23 +110,23 @@ export default function App() {
               <div className="brand-tagline">Щотижневий продуктовий агент для українського ритейлу</div>
             </div>
           </div>
-
-          {/* Quick Jump Rail across 5 screens */}
-          <nav className="screen-switcher-nav" aria-label="Навігація по екранах">
-            {PITCH_SECTIONS.map((sec) => (
-              <button
-                key={sec.id}
-                type="button"
-                className={`screen-switcher-btn ${activeScreenId === sec.id ? "active" : ""}`}
-                onClick={() => handleJumpToScreen(sec.id)}
-              >
-                <span>{sec.stepNumber}</span>
-                <span>{sec.badge}</span>
-              </button>
-            ))}
-          </nav>
         </div>
       </header>
+
+      {/* Quick Jump Rail fixed at bottom of screen & centered */}
+      <nav className="screen-switcher-nav" aria-label="Навігація по екранах">
+        {PITCH_SECTIONS.map((sec) => (
+          <button
+            key={sec.id}
+            type="button"
+            className={`screen-switcher-btn ${activeScreenId === sec.id ? "active" : ""}`}
+            onClick={() => handleJumpToScreen(sec.id)}
+          >
+            <span>{sec.stepNumber}</span>
+            <span>{sec.badge}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* Main Two-Column Layout */}
       <main className="presentation-container" id="presentation-main">
@@ -135,22 +135,6 @@ export default function App() {
           <PhoneFrame activeScreenId={activeScreenId}>
             {renderScreen()}
           </PhoneFrame>
-
-          {/* Quick Step Indicator Dots under phone */}
-          <div className="phone-quick-controls">
-            <span className="quick-nav-label">Екран</span>
-            {PITCH_SECTIONS.map((sec) => (
-              <button
-                key={sec.id}
-                type="button"
-                className={`quick-step-pill ${activeScreenId === sec.id ? "active" : ""}`}
-                onClick={() => handleJumpToScreen(sec.id)}
-                title={`Перейти до екрана ${sec.stepNumber}: ${sec.badge}`}
-              >
-                {sec.id}
-              </button>
-            ))}
-          </div>
         </section>
 
         {/* Right Column: 5 Explanatory Pitch Sections (~60%) */}
@@ -185,9 +169,20 @@ export default function App() {
                 <h2 className="pitch-headline">{section.headline}</h2>
 
                 <div className="pitch-paragraphs">
-                  {section.paragraphs.map((p, pIdx) => (
-                    <p key={pIdx}>{p}</p>
-                  ))}
+                  {section.paragraphs.map((p, pIdx) => {
+                    // Render bold tokens nicely
+                    const parts = p.split(/(\*\*.*?\*\*)/g);
+                    return (
+                      <p key={pIdx}>
+                        {parts.map((part, idx) => {
+                          if (part.startsWith("**") && part.endsWith("**")) {
+                            return <strong key={idx}>{part.slice(2, -2)}</strong>;
+                          }
+                          return part;
+                        })}
+                      </p>
+                    );
+                  })}
                 </div>
 
                 {/* Annotations pointing to specific UI decisions */}
