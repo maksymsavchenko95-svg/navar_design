@@ -5,16 +5,21 @@
  * Selected state defaults to «Форма» to demonstrate nutrient-driven planning.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MOCK_GOAL_CARDS } from "../mockData";
 
 interface Screen1GoalProps {
   onNext?: () => void;
   onSelectMode?: (mode: string) => void;
+  mode?: "form" | "routine";
 }
 
-export const Screen1Goal: React.FC<Screen1GoalProps> = ({ onNext, onSelectMode }) => {
-  const [selectedGoal, setSelectedGoal] = useState<string>("form");
+export const Screen1Goal: React.FC<Screen1GoalProps> = ({ onNext, onSelectMode, mode = "form" }) => {
+  const [selectedGoal, setSelectedGoal] = useState<string>(mode);
+
+  useEffect(() => {
+    setSelectedGoal(mode);
+  }, [mode]);
 
   const handleSelect = (id: string) => {
     setSelectedGoal(id);

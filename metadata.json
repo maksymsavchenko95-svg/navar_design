@@ -1,6 +1,6 @@
 {
   "name": "Navar — Grocery Planning Agent",
-  "description": "Interactive presentation prototype for Navar, an intelligent weekly grocery and nutrition planning agent for the Ukrainian retail market.",
+  "description": "Public landing page and interactive presentation prototype for Navar, an intelligent weekly grocery and nutrition planning agent for the Ukrainian retail market.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

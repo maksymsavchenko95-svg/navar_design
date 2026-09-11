@@ -54,7 +54,7 @@ export const PhoneFrame: React.FC<PhoneFrameProps> = ({ children, activeScreenId
         </div>
 
         {/* Viewport for Screen Component with key to trigger CSS transition */}
-        <div className="phone-viewport" id="phone-screen-viewport">
+        <div className="phone-viewport phone-viewport-id">
           <div key={activeScreenId} style={{ width: "100%", height: "100%" }}>
             {children}
           </div>
