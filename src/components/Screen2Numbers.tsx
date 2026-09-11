@@ -57,24 +57,27 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev, 
   const activeProtein = isCustomOverride ? customProtein : calculatedMetrics.protein;
 
   return (
-    <div className="phone-screen form-screen">
-      <div className="phone-header sticky-header frosted-glass-light z-10">
-        <button type="button" className="btn-back" onClick={onPrev}>
-          <span className="arrow-left" />
-        </button>
-        <div className="header-brand">
-          <div className="brand-logo">N</div>
-          <span className="brand-name">NAVAR</span>
+    <div className="screen-wrapper">
+      {/* Screen App Bar */}
+      <div className="app-screen-header">
+        <div className="app-screen-brand">
+          <button type="button" onClick={onPrev} style={{ display: "flex", alignItems: "center", color: "var(--color-text-muted)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <div className="app-logo-badge">N</div>
+          <span className="app-brand-title">NAVAR</span>
         </div>
-        <div className="step-pill">
-          <span>Крок 2 з 5</span>
-        </div>
+        <span className="app-badge-pill">Крок 2 з 5</span>
       </div>
 
-      <div className="phone-scroll-content pb-24">
-        <div className="screen-hero-text">
-          <h1>Кілька цифр</h1>
-          <p>Використовуємо для розрахунку ситного коридору та вартості кошика.</p>
+      <div className="app-content">
+        <div>
+          <h1 className="screen-hero-title">Кілька цифр</h1>
+          <p className="screen-sub-title" style={{ marginTop: "4px" }}>
+            Використовуємо для розрахунку ситного коридору та вартості кошика.
+          </p>
         </div>
 
         <div className="form-blocks-stack">
@@ -367,10 +370,13 @@ export const Screen2Numbers: React.FC<Screen2NumbersProps> = ({ onNext, onPrev, 
 
         </div>
 
-        <div style={{ marginTop: "8px", paddingTop: "8px" }}>
+        <div style={{ marginTop: "auto", paddingTop: "16px" }}>
           <button type="button" className="btn-primary" onClick={onNext}>
             <span>Далі</span>
-            <span className="arrow-right" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14" />
+              <path d="m12 5 7 7-7 7" />
+            </svg>
           </button>
         </div>
       </div>

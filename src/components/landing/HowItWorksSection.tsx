@@ -16,11 +16,11 @@ function MiniAppScreen({ stepIndex, appMode = "form", scale = 0.85 }: { stepInde
         width: `${340 * scale}px`,
         height: `${640 * scale}px`,
         position: "relative",
-        borderRadius: `${40 * scale}px`,
+        
         flexShrink: 0,
         margin: "0 auto",
-        boxShadow: "0 20px 40px -10px rgba(0,0,0,0.2)",
-        backgroundColor: "#12100E",
+        
+        
       }}
       aria-hidden="true"
     >
